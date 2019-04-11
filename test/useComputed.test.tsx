@@ -2,16 +2,18 @@ import { observable } from "mobx"
 import * as React from "react"
 import { act, cleanup, render } from "react-testing-library"
 
-import { observer, useComputed } from "../src"
+import { useComputed } from "../src"
+import { useObserver } from "./local.macro"
 
 afterEach(cleanup)
 
 describe("is used to rerender based on a computed value change", () => {
     it("keeps track of observable values", () => {
-        const TestComponent = observer((props: any) => {
+        const TestComponent = (props: any) => {
+            useObserver()
             const value = useComputed(() => props.store.x + 5 * props.store.y)
             return <div>{value}</div>
-        })
+        }
         const store = observable({ x: 5, y: 1 })
         const { container } = render(<TestComponent store={store} />)
         const div = container.querySelector("div")!
@@ -27,10 +29,11 @@ describe("is used to rerender based on a computed value change", () => {
     })
 
     it("allows non-observables to be used if specified as inputs", () => {
-        const TestComponent = observer((props: any) => {
+        const TestComponent = (props: any) => {
+            useObserver()
             const value = useComputed(() => props.store.x + 5 * props.y, [props.y])
             return <div>{value}</div>
-        })
+        }
         const store = observable({ x: 5 })
         const { container, rerender } = render(<TestComponent store={store} y={1} />)
         const div = container.querySelector("div")!

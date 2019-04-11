@@ -16,6 +16,7 @@
         "noUnusedParameters": false,
         "noImplicitAny": true,
         "noImplicitThis": true,
+        "stripInternal": true,
         "lib": ["es6", "dom"],
         "jsx": "react"
     },

@@ -2,13 +2,15 @@ import * as mobx from "mobx"
 import * as React from "react"
 import { cleanup, fireEvent, render } from "react-testing-library"
 
-import { observer, useObservable } from "../src"
+import { useObservable } from "../src"
+import { useObserver } from "./local.macro"
 
 afterEach(cleanup)
 
 describe("is used to keep observable within component body", () => {
     it("value can be changed over renders", () => {
         const TestComponent = () => {
+            useObserver()
             const obs = useObservable({
                 x: 1,
                 y: 2
@@ -19,12 +21,10 @@ describe("is used to keep observable within component body", () => {
                 </div>
             )
         }
-        const { container, rerender } = render(<TestComponent />)
+        const { container } = render(<TestComponent />)
         const div = container.querySelector("div")!
         expect(div.textContent).toBe("1-2")
         fireEvent.click(div)
-        // observer not used, need to render from outside
-        rerender(<TestComponent />)
         expect(div.textContent).toBe("2-2")
     })
 
@@ -33,7 +33,8 @@ describe("is used to keep observable within component body", () => {
 
         let renderCount = 0
 
-        const TestComponent = observer(() => {
+        const TestComponent = () => {
+            useObserver()
             renderCount++
 
             const obs = useObservable({
@@ -45,7 +46,7 @@ describe("is used to keep observable within component body", () => {
                     {obs.x}-{obs.y}
                 </div>
             )
-        })
+        }
         const { container } = render(<TestComponent />)
         const div = container.querySelector("div")!
         expect(div.textContent).toBe("1-2")
@@ -62,7 +63,8 @@ describe("is used to keep observable within component body", () => {
     })
 
     it("actions can be used", () => {
-        const TestComponent = observer(() => {
+        const TestComponent = () => {
+            useObserver()
             const obs = useObservable({
                 x: 1,
                 y: 2,
@@ -75,7 +77,7 @@ describe("is used to keep observable within component body", () => {
                     {obs.x}-{obs.y}
                 </div>
             )
-        })
+        }
         const { container } = render(<TestComponent />)
         const div = container.querySelector("div")!
         expect(div.textContent).toBe("1-2")
@@ -84,16 +86,17 @@ describe("is used to keep observable within component body", () => {
     })
 
     it("computed properties works as well", () => {
-        const TestComponent = observer(() => {
+        const TestComponent = () => {
+            useObserver()
             const obs = useObservable({
                 x: 1,
                 y: 2,
-                get z() {
+                get z(): number {
                     return obs.x + obs.y
                 }
             })
             return <div onClick={() => (obs.x += 1)}>{obs.z}</div>
-        })
+        }
         const { container } = render(<TestComponent />)
         const div = container.querySelector("div")!
         expect(div.textContent).toBe("3")
@@ -102,7 +105,8 @@ describe("is used to keep observable within component body", () => {
     })
 
     it("Map can used instead of object", () => {
-        const TestComponent = observer(() => {
+        const TestComponent = () => {
+            useObserver()
             const map = useObservable(new Map([["initial", 10]]))
             return (
                 <div onClick={() => map.set("later", 20)}>
@@ -113,11 +117,28 @@ describe("is used to keep observable within component body", () => {
                     ))}
                 </div>
             )
-        })
+        }
         const { container } = render(<TestComponent />)
         const div = container.querySelector("div")!
         expect(div.textContent).toBe("initial - 10")
         fireEvent.click(div)
         expect(div.textContent).toBe("initial - 10later - 20")
+    })
+
+    it("Lazy initial state function can used instead of object", () => {
+        const TestComponent = () => {
+            useObserver()
+            const state = useObservable(() => ({ initial: 10, later: 0 }))
+            return (
+                <div onClick={() => (state.later = 20)}>
+                    {state.initial},{state.later}
+                </div>
+            )
+        }
+        const { container } = render(<TestComponent />)
+        const div = container.querySelector("div")!
+        expect(div.textContent).toBe("10,0")
+        fireEvent.click(div)
+        expect(div.textContent).toBe("10,20")
     })
 })

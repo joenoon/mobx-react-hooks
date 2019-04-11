@@ -12,7 +12,10 @@ export interface IUseObserverOptions {
 
 const EMPTY_OBJECT = {}
 
-export function useObserver<T>(
+/**
+ * @internal
+ */
+export function useObserverInternal<T>(
     fn: () => T,
     baseComponentName: string = "observed",
     options: IUseObserverOptions = EMPTY_OBJECT

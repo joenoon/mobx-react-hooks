@@ -1,163 +1,67 @@
-# mobx-react-lite <!-- omit in toc -->
-
-[![Build Status](https://travis-ci.org/mobxjs/mobx-react-lite.svg?branch=master)](https://travis-ci.org/mobxjs/mobx-react-lite)[![Coverage Status](https://coveralls.io/repos/github/mobxjs/mobx-react-lite/badge.svg)](https://coveralls.io/github/mobxjs/mobx-react-lite)
+# @joenoon/mobx-react-hooks <!-- omit in toc -->
 
 [![Join the chat at https://gitter.im/mobxjs/mobx](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mobxjs/mobx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This is a next iteration of [mobx-react](https://github.com/mobxjs/mobx-react) coming from introducing React hooks which simplifies a lot of internal workings of this package.
+This is a hooks-specific iteration of [mobx-react](https://github.com/mobxjs/mobx-react).
 
 **You need React version 16.8.0 and above**
 
-Class based components **are not supported** except using `<Observer>` directly in its `render` method. If you want to transition existing projects from classes to hooks (as most of us do), you can use this package alongside the [mobx-react](https://github.com/mobxjs/mobx-react) just fine. The only conflict point is about the `observer` HOC. Subscribe [to this issue](https://github.com/mobxjs/mobx-react/issues/640) for a proper migration guide.
-
-[![NPM](https://nodei.co/npm/mobx-react-lite.png)](https://www.npmjs.com/package/mobx-react-lite)
+Class based components **are not supported**. If you want to transition existing projects from classes to hooks (as most of us do), you can use this package alongside the [mobx-react](https://github.com/mobxjs/mobx-react) just fine.
 
 Project is written in TypeScript and provides type safety out of the box. No Flow Type support is planned at this moment, but feel free to contribute.
 
 -   [API documentation](#api-documentation)
-    -   [`<Observer/>`](#observer)
-    -   [`observer<P>(baseComponent: FunctionComponent<P>, options?: IObserverOptions): FunctionComponent<P>`](#observerpbasecomponent-functioncomponentp-options-iobserveroptions-functioncomponentp)
-    -   [`useObserver<T>(fn: () => T, baseComponentName = "observed", options?: IUseObserverOptions): T`](#useobservertfn---t-basecomponentname--%22observed%22-options-iuseobserveroptions-t)
-    -   [`useObservable<T>(initialValue: T): T`](#useobservabletinitialvalue-t-t)
-        -   [Lazy initialization](#lazy-initialization)
-    -   [`useComputed(func: () => T, inputs: ReadonlyArray<any> = []): T`](#usecomputedfunc---t-inputs-readonlyarrayany---t)
-    -   [`useDisposable<D extends TDisposable>(disposerGenerator: () => D, inputs: ReadonlyArray<any> = []): D`](#usedisposabled-extends-tdisposabledisposergenerator---d-inputs-readonlyarrayany---d)
--   [Macro Version](#macro-version)
+    -   [useObserver](#useobserver)
+    -   [useObservable](#useobservable)
+    -   [useComputed](#usecomputed)
 -   [Server Side Rendering with `useStaticRendering`](#server-side-rendering-with-usestaticrendering)
--   [Why no Provider/inject?](#why-no-providerinject)
--   [What about smart/dumb components?](#what-about-smartdumb-components)
 
 ## API documentation
 
-### `<Observer/>`
+## useObserver
 
-`Observer` is a React component, which applies `observer` to an anonymous region in your component.
-It takes as children a single, argumentless function which should return exactly one React component.
-The rendering in the function will be tracked and automatically re-rendered when needed.
-This can come in handy when needing to pass render function to external components (for example the React Native listview), or if you want to observe only relevant parts of the output for a performance reasons.
+`useObserver<T>(baseComponentName = "observed", options?: IUseObserverOptions): T`
 
-```jsx
-import { Observer, useObservable } from "mobx-react-lite"
+Think of `useObserver` like you would think of `observer` from mobx-react, just with different syntax for hooks.
 
-function ObservePerson(props) {
+```tsx
+// useObserver comes from the macro
+import { useObserver } from "@joenoon/mobx-react-hooks/macro"
+
+// other hooks come as normal from the main library
+import { useObservable } from "@joenoon/mobx-react-hooks"
+
+const Person = props => {
+    useObserver()
     const person = useObservable({ name: "John" })
     return (
         <div>
             {person.name}
-            <Observer>{() => <div>{person.name}</div>}</Observer>
             <button onClick={() => (person.name = "Mike")}>No! I am Mike</button>
         </div>
     )
 }
 ```
 
-[![Edit ObservePerson](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/jzj48v2xry?module=%2Fsrc%2FObservePerson.tsx)
+The macro solves a few problems:
 
-In case you are a fan of render props, you can use that instead of children. Be advised, that you cannot use both approaches at once, children have a precedence.
-Example
+-   Hooks style code structure with less verbosity than alternatives.
+-   Without the macro, the code necessary to please the eslint rules of hooks is verbose.
+-   If you use `observer(props => ...break a hook rule)` you will not be warned - you may think you've done everything correctly until you eventually realize the linter is not analyzing these for you.
+-   By sticking to this simple pattern for components that handle observable data you can avoid many pitfalls related to expecting reactions in scopes that are not under observation. The macro enforces expected behavior.
 
-```jsx
-import { Observer, useObservable } from "mobx-react-lite"
+### useObservable
 
-function ObservePerson(props) {
-    const person = useObservable({ name: "John" })
-    return (
-        <div>
-            {person.name}
-            <Observer render={() => <div>{person.name}</div>} />
-            <button onClick={() => (person.name = "Mike")}>No! I am Mike</button>
-        </div>
-    )
-}
-```
+`useObservable<T>(initialValue: T | (() => T)): T`
 
-### `observer<P>(baseComponent: FunctionComponent<P>, options?: IObserverOptions): FunctionComponent<P>`
-
-Function that converts a function component into a reactive component, which tracks which observables are used automatically re-renders the component when one of these values changes. Observables can be passed through props, accessed from context or created locally with `useObservable`.
-
-As for options, it is an optional object with the following optional properties:
-
--   `forwardRef`: pass `true` to use [`forwardRef`](https://reactjs.org/docs/forwarding-refs.html) over the inner component, pass `false` (the default) otherwise.
+React hook that creates an observable. Should almost always be preceeded by `useObserver` so the component will react to changes. Gets all the benefits from [observable objects](https://mobx.js.org/refguide/object.html) including computed properties and methods. You can also use arrays, Map, Set, or a lazy initial state function.
 
 ```tsx
-import { observer, useObservable } from "mobx-react-lite"
-
-const FriendlyComponent = observer(() => {
-    const friendNameRef = React.useRef()
-    const data = useObservable({
-        friends: [] as string[],
-        addFriend(favorite: boolean = false) {
-            if (favorite === true) {
-                data.friends.unshift(friendNameRef.current.value + " * ")
-            } else {
-                data.friends.push(friendNameRef.current.value)
-            }
-            friendNameRef.current.value = ""
-        },
-        get friendsCount() {
-            return data.friends.length
-        }
-    })
-
-    return (
-        <div>
-            <b>Count of friends: {data.friendsCount} </b>
-            {data.friends.map(friend => (
-                <div>{friend}</div>
-            ))}
-            <hr />
-            <input ref={friendNameRef} />
-            <button onClick={data.addFriend}>Add friend </button>
-            <button onClick={() => data.addFriend(true)}>Add favorite friend</button>
-        </div>
-    )
-})
-```
-
-[![Edit FriendlyComponent](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/jzj48v2xry?module=%2Fsrc%2FFriendlyComponent.tsx)
-
-### `useObserver<T>(fn: () => T, baseComponentName = "observed", options?: IUseObserverOptions): T`
-
-Low level implementation used internally by `observer`.
-It allows you to use an `observer` like behaviour, but still allowing you to optimize the component in any way you want (e.g. using `memo` with a custom `areEqual`, using `forwardRef`, etc.) and to declare exactly the part that is observed (the render phase). One good thing about this is that if any hook changes an observable for some reason then the component won't rerender twice unnecessarily.
-
-The following optional parameters are available:
-
--   `baseComponentName`: a string that will be used as part of the reaction name.
-
-As for the options, the following are available:
-
--   `useForceUpdate`: optional custom hook that should make a component re-render (or not) when changes are detected.
-
-```tsx
-import { memo } from "react"
-import { useObserver, useObservable } from "mobx-react-lite"
-
-const Person = memo(props => {
-    const person = useObservable({ name: "John" })
-    return useObserver(() => (
-        <div>
-            {person.name}
-            <button onClick={() => (person.name = "Mike")}>No! I am Mike</button>
-        </div>
-    ))
-})
-```
-
-# Notice of deprecation
-
-We are considering deprecation and removal of following utilities from the package. Come join the discussion: https://github.com/mobxjs/mobx-react-lite/issues/94
-
-### `useObservable<T>(initialValue: T): T`
-
-React hook that allows creating observable object within a component body and keeps track of it over renders. Gets all the benefits from [observable objects](https://mobx.js.org/refguide/object.html) including computed properties and methods. You can also use arrays, Map and Set.
-
-Warning: With current implementation you also need to wrap your component to `observer`. It's also possible to have `useObserver` only in case you are not expecting rerender of the whole component.
-
-```tsx
-import { observer, useObservable, useObserver } from "mobx-react-lite"
+import { useObserver } from "@joenoon/mobx-react-hooks/macro"
+import { useObservable } from "@joenoon/mobx-react-hooks"
 
 const TodoList = () => {
+    useObserver()
     const todos = useObservable(new Map<string, boolean>())
     const todoRef = React.useRef()
     const addTodo = React.useCallback(() => {
@@ -168,7 +72,7 @@ const TodoList = () => {
         todos.set(todo, !todos.get(todo))
     }, [])
 
-    return useObserver(() => (
+    return (
         <div>
             {Array.from(todos).map(([todo, done]) => (
                 <div onClick={() => toggleTodo(todo)} key={todo}>
@@ -179,38 +83,29 @@ const TodoList = () => {
             <input ref={todoRef} />
             <button onClick={addTodo}>Add todo</button>
         </div>
-    ))
+    )
 }
 ```
 
-#### Lazy initialization
-
-Lazy initialization (similar to `React.useState`) is not available. In most cases your observable state should be a plain object which is cheap to create. With `useObserver` the component won't even rerender and state won't be recreated. In case you really want a more complex state or you need to use `observer`, it's very simple to use MobX directly.
+Note that if you want to track a single scalar value (string, number, boolean), you would need [a boxed value](https://mobx.js.org/refguide/boxed.html) which is not recognized by `useObservable`. However, you can simply create a "state" observable and then mutate `state`, like so:
 
 ```tsx
-import { observer } from "mobx-react-lite"
-import { observable } from "mobx"
-import { useState } from "react"
-
-const WithComplexState = observer(() => {
-    const [complexState] = useState(() => observable(new HeavyState()))
-    if (complexState.loading) {
-        return <Loading />
-    }
-    return <div>{complexState.heavyName}</div>
-})
+...
+const state = useObservable({ myScalar: 1 })
+...
 ```
 
-[![Edit TodoList](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/jzj48v2xry?module=%2Fsrc%2FTodoList.tsx)
+### useComputed
 
-Note that if you want to track a single scalar value (string, number, boolean), you would need [a boxed value](https://mobx.js.org/refguide/boxed.html) which is not recognized by `useObservable`. However, we recommend to just `useState` instead which gives you almost same result (with slightly different API).
+`useComputed(func: () => T, inputs: ReadonlyArray<any> = []): T`
 
-### `useComputed(func: () => T, inputs: ReadonlyArray<any> = []): T`
-
-Another React hook that simplifies computational logic. It's just a tiny wrapper around [MobX computed](https://mobx.js.org/refguide/computed-decorator.html#-computed-expression-as-function) function that runs computation whenever observable values change. In conjuction with `observer` the component will rerender based on such a change.
+Another React hook that simplifies computational logic. Should always be preceeded by `useObserver` so it is tracked over renders. It's just a tiny wrapper around [MobX computed](https://mobx.js.org/refguide/computed-decorator.html#-computed-expression-as-function) function that runs computation whenever observable values change.
 
 ```tsx
-const Calculator = observer(({ hasExploded }: { hasExploded: boolean }) => {
+import { useObserver } from "@joenoon/mobx-react-hooks/macro"
+import { useObservable, useComputed } from "@joenoon/mobx-react-hooks"
+const Calculator = ({ hasExploded }: { hasExploded: boolean }) => {
+    useObserver()
     const inputRef = React.useRef()
     const inputs = useObservable([1, 3, 5])
     const result = useComputed(
@@ -229,96 +124,10 @@ const Calculator = observer(({ hasExploded }: { hasExploded: boolean }) => {
             </div>
         </div>
     )
-})
+}
 ```
 
 Notice that since the computation depends on non-observable value, it has to be passed as a second argument to `useComputed`. There is [React `useMemo`](https://reactjs.org/docs/hooks-reference.html#usememo) behind the scenes and all rules applies here as well except you don't need to specify dependency on observable values.
-
-[![Edit Calculator](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/jzj48v2xry?module=%2Fsrc%2FCalculator.tsx)
-
-### `useDisposable<D extends TDisposable>(disposerGenerator: () => D, inputs: ReadonlyArray<any> = []): D`
-
-The disposable is any kind of function that returns another function to be called on a component unmount to clean up used resources. Use MobX related functions like [`reaction`](https://mobx.js.org/refguide/reaction.html), [`autorun`](https://mobx.js.org/refguide/autorun.html), [`when`](https://mobx.js.org/refguide/when.html), [`observe`](https://mobx.js.org/refguide/observe.html), or anything else that returns a disposer.
-Returns the generated disposer for early disposal.
-
-Example (TypeScript):
-
-```typescript
-import { reaction } from "mobx"
-import { observer, useComputed, useDisposable } from "mobx-react-lite"
-
-const Name = observer((props: { firstName: string; lastName: string }) => {
-    const fullName = useComputed(() => `${props.firstName} ${props.lastName}`, [
-        props.firstName,
-        props.lastName
-    ])
-
-    // when the name changes then send this info to the server
-    useDisposable(() =>
-        reaction(
-            () => fullName,
-            () => {
-                // send this to some server
-            }
-        )
-    )
-
-    // render phase
-    return `Your full name is ${props.firstName} ${props.lastName}`
-})
-```
-
-## Macro Version
-
-Think of the macro version of `useObserver` like you would think of `observer` from mobx-react, just with different syntax.
-
-### `useObserver<T>(baseComponentName = "observed", options?: IUseObserverOptions): T`
-
-```tsx
-// useObserver comes from the macro
-import { useObserver } from "mobx-react-lite/macro"
-
-// other hooks come as normal from the main library
-import { useObservable } from "mobx-react-lite"
-
-const Person = props => {
-    useObserver()
-    const person = useObservable({ name: "John" })
-    return (
-        <div>
-            {person.name}
-            <button onClick={() => (person.name = "Mike")}>No! I am Mike</button>
-        </div>
-    )
-}
-```
-
-The macro rewrites your code at build/compile-time into the following:
-
-```tsx
-import { useObserver } from "mobx-react-lite"
-import { useObservable } from "mobx-react-lite"
-
-// NOTE: MACRO GENERATED TRANSFORMATION:
-const Person = props => {
-    return useObserver(function useObserverRenderHook() {
-        const person = useObservable({ name: "John" })
-        return (
-            <div>
-                {person.name}
-                <button onClick={() => (person.name = "Mike")}>No! I am Mike</button>
-            </div>
-        )
-    })
-}
-```
-
-The macro solves a few problems:
-
--   More hook-like code structure, less verbosity.
--   If you use `observer(props => ...break a hook rule)` you will not be warned - you may think you've done everything correctly until you eventually realize the linter is not analyzing these for you.
--   If you use `useObserver(() => ...useX())` directly, you are breaking a rule of hooks as per the current linting rules (calling a hook inside of a callback). You can get around this and please the linter by naming your inner function such as the macro output demonstrates above, but that leads to additional code vebosity.
--   By sticking to this simple pattern for components that handle observable data you can avoid many pitfalls associated with using `Observer` or `useObserver` directly as the last return but not sole statement. The pitfalls are related to expecting reactions in scopes that are not under observation. The macro enforces expected behavior.
 
 ## Server Side Rendering with `useStaticRendering`
 
@@ -327,82 +136,13 @@ Since components are never unmounted, `observer` components would in this case l
 To avoid leaking memory, call `useStaticRendering(true)` when using server side rendering which essentially disables observer.
 
 ```js
-import { useStaticRendering } from "mobx-react-lite"
+import { useStaticRendering } from "@joenoon/mobx-react-hooks"
 
 useStaticRendering(true)
 ```
 
 This makes sure the component won't try to react to any future data changes.
 
-## Why no Provider/inject?
+## Prior Works
 
-Historically the Provider was useful because a lot of boilerplate was required due to experimental (but widely used) context. By introducing new [Context API](https://reactjs.org/docs/context.html) in React 16.3 it's fairly easy to do this.
-
-```js
-const StoreContext = React.createContext(createStore())
-
-// a file with a component
-function ConnectedComponent() {
-    // replacement for inject
-    const store = useContext(StoreContext)
-}
-```
-
-If you need to create a store sometimes later, you can just render `StoreContext.Provider` somewhere in tree.
-
-```js
-const StoreContext = React.createContext()
-
-function App({ children }) {
-    return <StoreContext.Provider value={createStore()}>{children}</StoreContext.Provider>
-}
-```
-
-## What about smart/dumb components?
-
-The React hooks don't force anyone to suddenly have a state inside a _dumb component_ that is supposed to only render stuff. You can separate your concerns in a similar fashion.
-
-```tsx
-import { createSelector } from "react-selector-hooks"
-
-const userSelector = createSelector(({ user }) => ({
-    name: user.name,
-    age: user.age
-}))
-
-function UiComponent({ name, age }) {
-    return (
-        <div>
-            <div>Name: {name}</div>
-            <div>Age: {age}</div>
-        </div>
-    )
-}
-
-export default () => {
-    // you may extract these two lines into a custom hook
-    const store = useContext(StoreContext)
-    const data = userSelector(store)
-    return UiComponent({ ...data })
-    // perhaps wrap it inside observer in here?
-    return observer(UiComponent({ ...data }))
-}
-```
-
-It may look a bit more verbose than a _classic_ inject, but there is nothing stopping you to make your own `inject` HOC which is so much easier since everything is just a function.
-
-```tsx
-// make universal HOC
-
-const inject = (useSelector, baseComponent) =>
-    React.useMemo(props => {
-        const store = useContext(StoreContext)
-        const selected = useSelector(store)
-
-        return baseComponent({ ...selected, ...props })
-    })
-
-// use the HOC with a selector
-
-export default inject(userSelector, UiComponent)
-```
+This project is a fork of [mobx-react-lite](https://github.com/mobxjs/mobx-react-lite) which offers various ways of doing things. The intention with this library is to offer one clear and concise pattern for using mobx with React Hooks.

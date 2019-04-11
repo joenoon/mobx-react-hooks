@@ -3,14 +3,17 @@ import * as mobx from "mobx"
 import * as React from "react"
 import { act, cleanup, render } from "react-testing-library"
 
-import { useObserver } from "../src"
+import { useObserver } from "./local.macro"
 
 afterEach(cleanup)
 
 test("uncommitted observing components should not attempt state changes", () => {
     const store = mobx.observable({ count: 0 })
 
-    const TestComponent = () => useObserver(() => <div>{store.count}</div>)
+    const TestComponent = () => {
+        useObserver()
+        return <div>{store.count}</div>
+    }
 
     // Render our observing component wrapped in StrictMode
     const rendering = render(

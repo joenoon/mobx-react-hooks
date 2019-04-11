@@ -1,7 +1,8 @@
 import { observable } from "mobx"
 import * as React from "react"
 import { act, cleanup, render } from "react-testing-library"
-import { IUseObserverOptions, useForceUpdate, useObserver } from "../src"
+import { IUseObserverOptions, useForceUpdate } from "../src"
+import { useObserver } from "./local.macro"
 
 afterEach(cleanup)
 
@@ -22,7 +23,8 @@ it("a custom force update method can be used", () => {
     const obs = observable.box(0)
 
     const TestComponent = () => {
-        return useObserver(() => <div>{obs.get()}</div>, undefined, opts)
+        useObserver(undefined, opts)
+        return <div>{obs.get()}</div>
     }
 
     render(<TestComponent />)

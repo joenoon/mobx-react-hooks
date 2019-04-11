@@ -1,6 +1,5 @@
 const { createUseObserver } = require("./createUseObserver")
-const path = require("path")
 module.exports = createUseObserver({
-    importSource: "mobx-react-lite",
-    importSpecifier: "useObserver"
+    importSource: "@joenoon/mobx-react-hooks",
+    importSpecifier: "useObserverInternal"
 })
