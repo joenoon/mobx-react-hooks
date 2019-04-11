@@ -1,6 +1,6 @@
 {
   "name": "@joenoon/mobx-react-hooks",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "React Hooks for MobX",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.module.js",
