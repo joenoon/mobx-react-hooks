@@ -3,19 +3,18 @@
 exports[`macros 1. macros: 1. macros 1`] = `
 "
 import {useObserver} from '../src/macro'
-import {useObservable, useComputed} from '../src';
 
 export const MyComponent = (props) => {
   useObserver();
-  const foo = useObservable({foo: 1});
-  const bar = useComputed(() => foo.foo + 1);
+  const foo = 1;
+  const bar = 2;
   return null;
 };
 
 export const MyComponent2 = (props) => {
   // a comment
   useObserver();
-  const foo = useObservable({foo: 1});
+  const foo = 1;
   return null;
 };
 
@@ -37,29 +36,24 @@ export const MyComponent5 = (props) => {
 export const MyComponent6 = (props) => {
 
   useObserver();
-  const foo = useObservable({foo: 1});
+  const foo = 1;
   return null;
 };
 
       ↓ ↓ ↓ ↓ ↓ ↓
 
 import { useObserverInternal } from \\"@joenoon/mobx-react-hooks\\";
-import { useObservable, useComputed } from '../src';
 export const MyComponent = props => {
   return useObserverInternal(function useObserverRenderHook() {
-    const foo = useObservable({
-      foo: 1
-    });
-    const bar = useComputed(() => foo.foo + 1);
+    const foo = 1;
+    const bar = 2;
     return null;
   });
 };
 export const MyComponent2 = props => {
   // a comment
   return useObserverInternal(function useObserverRenderHook() {
-    const foo = useObservable({
-      foo: 1
-    });
+    const foo = 1;
     return null;
   });
 };
@@ -82,9 +76,7 @@ export const MyComponent5 = props => {
 };
 export const MyComponent6 = props => {
   return useObserverInternal(function useObserverRenderHook() {
-    const foo = useObservable({
-      foo: 1
-    });
+    const foo = 1;
     return null;
   });
 };
@@ -94,17 +86,16 @@ export const MyComponent6 = props => {
 exports[`macros 2. macros: 2. macros 1`] = `
 "
 import {useObserver} from '../src/macro'
-import {useObservable, useComputed} from '../src';
 
 export const MyComponent7 = (props) => {
   dontDoThis();
   useObserver();
-  const foo = useObservable({foo: 1});
+  const foo = 1;
   return null;
 };
 
       ↓ ↓ ↓ ↓ ↓ ↓
 
-MacroError: createUseObserver.test.ts:6: useObserver() provided by the macro must be the first line of the FunctionComponent.
+MacroError: createUseObserver.test.ts:5: useObserver() provided by the macro must be the first line of the FunctionComponent.
 "
 `;

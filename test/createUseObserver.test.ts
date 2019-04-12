@@ -10,19 +10,18 @@ pluginTester({
     tests: [
         `
       import {useObserver} from '../src/macro'
-      import {useObservable, useComputed} from '../src';
 
       export const MyComponent = (props) => {
         useObserver();
-        const foo = useObservable({foo: 1});
-        const bar = useComputed(() => foo.foo + 1);
+        const foo = 1;
+        const bar = 2;
         return null;
       };
 
       export const MyComponent2 = (props) => {
         // a comment
         useObserver();
-        const foo = useObservable({foo: 1});
+        const foo = 1;
         return null;
       };
 
@@ -44,7 +43,7 @@ pluginTester({
       export const MyComponent6 = (props) => {
 
         useObserver();
-        const foo = useObservable({foo: 1});
+        const foo = 1;
         return null;
       };
       `,
@@ -52,12 +51,11 @@ pluginTester({
             error: true,
             code: `
       import {useObserver} from '../src/macro'
-      import {useObservable, useComputed} from '../src';
 
       export const MyComponent7 = (props) => {
         dontDoThis();
         useObserver();
-        const foo = useObservable({foo: 1});
+        const foo = 1;
         return null;
       };
       `

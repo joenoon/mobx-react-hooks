@@ -1,6 +1,6 @@
 {
   "name": "@joenoon/mobx-react-hooks",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "React Hooks for MobX",
   "main": "dist/index.js",
   "jsnext:main": "dist/index.module.js",
@@ -16,11 +16,16 @@
     "prettier": "prettier --write \"**/*.js\" \"**/*.ts\"",
     "lint": "tslint --project .",
     "validate": "tsc --noEmit",
-    "test": "jest --watch",
+    "pretest": "yarn build:macro",
+    "test": "jest",
     "test:travis": "yarn validate && yarn lint && yarn coverage",
     "coverage": "jest --coverage",
-    "prebuild": "rimraf dist macro",
-    "build": "node build-rollup.js && tsc -b tsconfig.build.macro.json && cp src/macro/index.* macro/"
+    "prebuild:main": "rimraf macro",
+    "prebuild:macro": "rimraf macro",
+    "build": "yarn build:main && yarn build:macro",
+    "build:main": "node build-rollup.js",
+    "build:macro": "tsc -b tsconfig.build.macro.json && cp src/macro/index.* macro/",
+    "release:prepare": "yarn validate && yarn lint && yarn test && yarn build"
   },
   "author": "Joe Noon",
   "license": "MIT",
